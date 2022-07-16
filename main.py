@@ -1,13 +1,28 @@
 import discord
 import random
+from discord.ext import commands
 
 TOKEN = "OTk3NjI3NTI2NTM0OTM0NjQ4.GOfOOJ.KURkQcGcz6EMqzP94FP2JzYYbNXx_vkqmuStyM"
 
 client = discord.Client()
+client = commands.Bot(command_prefix = '!')
 
 @client.event
 async def on_ready():
     print("Bot is ready {0.user}".format(client))
+
+@client.command()
+async def test(ctx, arg):
+    await ctx.send(arg)
+
+@client.command()
+async def ping(ctx):
+    await ctx.send(f"ping = {round(client.latency * 100)} ms")
+
+@client.command()
+async def roll(ctx):
+    await ctx.send(f"You rolled a {random.randint(100)}")
+
 
 @client.event
 async def on_message(message):
@@ -25,14 +40,15 @@ async def on_message(message):
             return
         elif user_message.lower() == "bye":
             await message.channel.send(f"Goodbye {username} !")
-        elif user_message.lower() == "!random":
-            response = f"This is your random number: {random.randrange(100)}"
-            await message.channel.send(response)
             return
 
     if user_message.lower() == "!anywhere":
         await message.channel.send("This can be used anywhere!")
         return
+
+    await client.process_commands(message)
+
+
 
 
 client.run(TOKEN)
