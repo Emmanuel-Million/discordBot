@@ -1,6 +1,8 @@
 import discord
 import random
 from discord.ext import commands
+import datetime
+import wikipedia
 
 TOKEN = "OTk3NjI3NTI2NTM0OTM0NjQ4.GOfOOJ.KURkQcGcz6EMqzP94FP2JzYYbNXx_vkqmuStyM"
 
@@ -10,10 +12,16 @@ client = commands.Bot(command_prefix = '!')
 @client.event
 async def on_ready():
     print("Bot is ready {0.user}".format(client))
+    time = datetime.datetime.now()
+    print(time)
 
 @client.command()
 async def test(ctx, arg):
     await ctx.send(arg)
+
+@client.command()
+async def time(ctx):
+    await ctx.send(datetime.datetime.now())
 
 @client.command()
 async def ping(ctx):
@@ -21,17 +29,23 @@ async def ping(ctx):
 
 @client.command()
 async def roll(ctx):
-    await ctx.send(f"You rolled a {random.randint(100)}")
+    await ctx.send(f"You rolled a {random.randrange(101)}")
 
+@client.command()
+async def fgo(ctx, arg):
+    await ctx.send(f"https://gamepress.gg/grandorder/servant/{arg}")
 
 @client.event
 async def on_message(message):
+
+    # chat log
     username = str(message.author).split("#")[0]
     user_message = str(message.content)
     channel = str(message.channel.name)
     print(f"{username}: {user_message} ({channel})")
 
-    if message.author ==client.user:
+    # keeps bot from responding to itself
+    if message.author == client.user:
         return
 
     if message.channel.name == "general":
@@ -42,13 +56,18 @@ async def on_message(message):
             await message.channel.send(f"Goodbye {username} !")
             return
 
-    if user_message.lower() == "!anywhere":
-        await message.channel.send("This can be used anywhere!")
-        return
+    # wikipedia search
+    if user_message.startswith("!define"):
+        search = user_message[8:]
+        try:
+            result = wikipedia.summary(search, sentences = 3, auto_suggest = False, redirect = True)
+            embed_result = discord.Embed(title="Searching...", description=result, color=discord.Color.blue())
+            await message.channel.send(content=None, embed=embed_result)
+            return
+        except(wikipedia.exceptions.PageError): 
+            await message.channel.send(f"Page id {search} does not match any pages. Try another search.")
+            return
 
     await client.process_commands(message)
-
-
-
 
 client.run(TOKEN)
