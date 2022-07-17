@@ -9,31 +9,30 @@ TOKEN = "OTk3NjI3NTI2NTM0OTM0NjQ4.GOfOOJ.KURkQcGcz6EMqzP94FP2JzYYbNXx_vkqmuStyM"
 client = discord.Client()
 client = commands.Bot(command_prefix = '!')
 
+client.remove_command('help')
+
 @client.event
 async def on_ready():
     print("Bot is ready {0.user}".format(client))
     time = datetime.datetime.now()
-    print(time)
+    print(time.strftime("%A %B %d,  %Y  %I:%M %p"))
 
 @client.command()
-async def test(ctx, arg):
-    await ctx.send(arg)
+async def help(ctx):
+    await ctx.send("```Current working commands \n\n\t!help   : Displays all working commands \n\n\t!time   : Displays current users time \n\n\t!ping   : Displays current users ping \n\n\t!roll   : Rolls a 100 sided dice and generates a random number [1-100] \n\n\t!define : Searches keyword and prints out Wiki page summary \n\nIf the Bot is suffering from delay, please be patient and/or wait for an admin to reboot.```")
 
 @client.command()
 async def time(ctx):
-    await ctx.send(datetime.datetime.now())
+    x = datetime.datetime.now()
+    await ctx.send(x.strftime("```%A %B %d,  %Y  %I:%M %p```"))
 
 @client.command()
 async def ping(ctx):
-    await ctx.send(f"ping = {round(client.latency * 100)} ms")
+    await ctx.send(f"```ping = {round(client.latency * 100)} ms```")
 
 @client.command()
 async def roll(ctx):
-    await ctx.send(f"You rolled a {random.randrange(101)}")
-
-@client.command()
-async def fgo(ctx, arg):
-    await ctx.send(f"https://gamepress.gg/grandorder/servant/{arg}")
+    await ctx.send(f"```You rolled a {random.randrange(101)}```")
 
 @client.event
 async def on_message(message):
@@ -48,24 +47,25 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    #"I'm" bot reaction
     if message.channel.name == "general":
-        if user_message.lower() == "hello":
-            await message.channel.send(f"Hello {username} !")
-            return
-        elif user_message.lower() == "bye":
-            await message.channel.send(f"Goodbye {username} !")
+        if user_message.startswith(("I'm", "im", "Im")):
+            name = user_message.split(" ", 1)[1]
+            await message.channel.send(f"Hi {name}, I'm Unit1.")
             return
 
     # wikipedia search
     if user_message.startswith("!define"):
-        search = user_message[8:]
+        search = user_message.split(" ", 1)[1]
         try:
             result = wikipedia.summary(search, sentences = 3, auto_suggest = False, redirect = True)
             embed_result = discord.Embed(title="Searching...", description=result, color=discord.Color.blue())
             await message.channel.send(content=None, embed=embed_result)
             return
+
         except(wikipedia.exceptions.PageError): 
-            await message.channel.send(f"Page id {search} does not match any pages. Try another search.")
+            embed_error = discord.Embed(title="Incorrect Page ID", description="Page ID does not match any pages. Try another search.", color=discord.Color.blue())
+            await message.channel.send(content=None, embed=embed_error)
             return
 
     await client.process_commands(message)
