@@ -15,12 +15,14 @@ client = commands.Bot(command_prefix = '!')
 
 client.remove_command('help')
 
+#Bot ready
 @client.event
 async def on_ready():
     print("Bot is ready {0.user}".format(client))
     time = datetime.datetime.now()
     print(time.strftime("%A %B %d,  %Y  %I:%M %p"))
 
+#Help
 @client.command()
 async def help(ctx):
     help_content =  """\n\n***!help***    : Displays all working commands
@@ -34,19 +36,23 @@ async def help(ctx):
     embed_help = discord.Embed(title="Commands List...", description=help_content)
     await ctx.send(content=None, embed=embed_help)
 
+#User Time
 @client.command()
 async def time(ctx):
     x = datetime.datetime.now()
     await ctx.send(x.strftime("```%A %B %d,  %Y  %I:%M %p```"))
 
+#User Ping
 @client.command()
 async def ping(ctx):
     await ctx.send(f"```ping = {round(client.latency * 100)} ms```")
 
+#Dice roll
 @client.command()
 async def roll(ctx):
     await ctx.send(f"```You rolled a {random.randrange(101)}```")
 
+#IP search
 @client.command()
 async def ip(ctx, *, ipaddr: str = "9.9.9.9"):
     r = requests.get(f"https://extreme-ip-lookup.com/json/{ipaddr}?key={code}")
@@ -79,28 +85,25 @@ async def ip(ctx, *, ipaddr: str = "9.9.9.9"):
         await ctx.send(content=None, embed=embed_QueryError)
         print("Unit1: Query Error")
 
-
+# Chat Log, Bot Reaction, Wiki Search
 @client.event
 async def on_message(message):
 
-    # chat log
     username = str(message.author).split("#")[0]
     user_message = str(message.content)
     channel = str(message.channel.name)
     print(f"{username}: {user_message} ({channel})")
 
-    # keeps bot from responding to itself
+    #Keep bot from responding to self
     if message.author == client.user:
         return
 
-    #"I'm" bot reaction
     if message.channel.name == "general":
         if user_message.startswith(("I'm", "im", "Im")):
             name = user_message.split(" ", 1)[1]
             await message.channel.send(f"Hi {name}, I'm a Bot.")
             return
 
-    # wikipedia search
     if user_message.startswith("!define"):
         search = user_message.split(" ", 1)[1]
         try:
