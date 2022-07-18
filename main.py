@@ -4,7 +4,8 @@ from discord.ext import commands
 import datetime
 import wikipedia
 
-TOKEN = "OTk3NjI3NTI2NTM0OTM0NjQ4.GOfOOJ.KURkQcGcz6EMqzP94FP2JzYYbNXx_vkqmuStyM"
+with open("TOKEN.txt", "r", encoding="utf-8") as f:
+    TOKEN = f.read()
 
 client = discord.Client()
 client = commands.Bot(command_prefix = '!')
