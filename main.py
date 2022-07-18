@@ -3,9 +3,12 @@ import random
 from discord.ext import commands
 import datetime
 import wikipedia
+import requests
+import yaml
 
-with open("TOKEN.txt", "r", encoding="utf-8") as f:
-    TOKEN = f.read()
+conf = yaml.full_load(open('accessCode.yml'))
+code = conf['user']['code'] 
+token = conf['user']['token']
 
 client = discord.Client()
 client = commands.Bot(command_prefix = '!')
@@ -20,7 +23,14 @@ async def on_ready():
 
 @client.command()
 async def help(ctx):
-    help_content = "\n\n***!help***   : Displays all working commands \n\n***!time***   : Displays current users time \n\n***!ping***   : Displays current users ping \n\n***!roll***   : Rolls a 100 sided dice and generates a random number [1-100] \n\n***!define*** : Searches keyword and prints out Wiki page summary \n\n**If the Bot is suffering from delay, please be patient and/or wait for an admin to reboot.**"
+    help_content =  """\n\n***!help***    : Displays all working commands
+                    \n***!time***    : Displays current users time
+                    \n***!ping***    : Displays current users ping 
+                    \n***!roll***    : Rolls a 100 sided dice and generates a random number [1-100] 
+                    \n***!dox***     : Takes in IP Address and displays relevant information
+                    \n***!define***  : Takes in keyword and prints out Wiki search page summary 
+                    \n**If the Bot is suffering from delay, please be patient and/or wait for an admin to reboot.**"""
+
     embed_help = discord.Embed(title="Commands List...", description=help_content)
     await ctx.send(content=None, embed=embed_help)
 
@@ -36,6 +46,39 @@ async def ping(ctx):
 @client.command()
 async def roll(ctx):
     await ctx.send(f"```You rolled a {random.randrange(101)}```")
+
+@client.command()
+async def ip(ctx, *, ipaddr: str = "9.9.9.9"):
+    r = requests.get(f"https://extreme-ip-lookup.com/json/{ipaddr}?key={code}")
+    geo = r.json()
+    
+    try:
+        embed_dox = discord.Embed()
+
+        embed_dox.add_field(name="IP", value=geo["query"], inline=True)
+        embed_dox.add_field(name="IP Type", value=geo["ipType"], inline=True)
+        embed_dox.add_field(name="Country", value=geo["country"], inline=True)
+        embed_dox.add_field(name="City", value=geo["city"], inline=True)
+        embed_dox.add_field(name="Continent", value=geo["continent"], inline=True)
+        embed_dox.add_field(name="IP Name", value=geo["ipName"], inline=True)
+        embed_dox.add_field(name="ISP", value=geo["isp"], inline=True)
+        embed_dox.add_field(name="Latitude", value=geo["lat"], inline=True)
+        embed_dox.add_field(name="Longitude", value=geo["lon"], inline=True)
+        embed_dox.add_field(name="Org", value=geo["org"], inline=True)
+        embed_dox.add_field(name="Region", value=geo["region"], inline=True)
+        embed_dox.add_field(name="Status", value=geo["status"], inline=True)
+
+        embed_dox.timestamp = datetime.datetime.utcnow()
+        embed_dox.set_footer(text="\u200b")
+
+        await ctx.send(content=None, embed=embed_dox)
+        print(f"Unit1: Dox Successful for IP: {ipaddr}")
+    
+    except:
+        embed_QueryError = discord.Embed(title="Query Error", description="Invalid IP. Try another search.")
+        await ctx.send(content=None, embed=embed_QueryError)
+        print("Unit1: Query Error")
+
 
 @client.event
 async def on_message(message):
@@ -74,11 +117,11 @@ async def on_message(message):
             return
 
         except wikipedia.exceptions.DisambiguationError as e:
-            embed_DisambiguationError = discord.Embed(title="Ambiguous Search Error", description=e)
+            embed_DisambiguationError = discord.Embed(title="Ambiguous Search Error.", description=e)
             await message.channel.send(content=None, embed=embed_DisambiguationError)
             print("Unit1: Disambiguation Message")
             return
 
     await client.process_commands(message)
 
-client.run(TOKEN)
+client.run(token)
