@@ -7,8 +7,10 @@ import requests
 import yaml
 
 conf = yaml.full_load(open('accessCode.yml'))
-code = conf['user']['code'] 
+IPcode = conf['user']['IPcode'] 
 token = conf['user']['token']
+Wcode = conf['user']['Wcode']
+
 
 client = discord.Client()
 client = commands.Bot(command_prefix = '!')
@@ -22,43 +24,44 @@ async def on_ready():
     time = datetime.datetime.now()
     print(time.strftime("%A %B %d,  %Y  %I:%M %p"))
 
-#Help
+#Help command
 @client.command()
 async def help(ctx):
-    help_content =  """\n\n***!help***    : Displays all working commands
-                    \n***!time***    : Displays current users time
-                    \n***!ping***    : Displays current users ping 
-                    \n***!roll***    : Rolls a 100 sided dice and generates a random number [1-100] 
-                    \n***!dox***     : Takes in IP Address and displays relevant information
-                    \n***!define***  : Takes in keyword and prints out Wiki search page summary 
+    help_content =  """\n\n***!help***    : Displays all working commands.
+                    \n***!time***    : Displays current users time.
+                    \n***!ping***    : Displays current users ping.
+                    \n***!roll***    : Rolls a 100 sided dice and generates a random number [1-100].
+                    \n***!dox***     : Takes in IP Address and displays relevant information.
+                    \n***!define***  : Takes in keyword and prints out Wiki search page summary .
+                    \n***!weather*** : Takes in 'City' or 'City, Country' and displays current weather information.
                     \n**If the Bot is suffering from delay, please be patient and/or wait for an admin to reboot.**"""
 
     embed_help = discord.Embed(title="Commands List...", description=help_content)
     await ctx.send(content=None, embed=embed_help)
 
-#User Time
+#User Time command
 @client.command()
 async def time(ctx):
     x = datetime.datetime.now()
     await ctx.send(x.strftime("```%A %B %d,  %Y  %I:%M %p```"))
 
-#User Ping
+#User Ping command
 @client.command()
 async def ping(ctx):
     await ctx.send(f"```ping = {round(client.latency * 100)} ms```")
 
-#Dice roll
+#Dice roll command
 @client.command()
 async def roll(ctx):
     await ctx.send(f"```You rolled a {random.randrange(101)}```")
 
-#IP search
+#IP search command
 @client.command()
-async def ip(ctx, *, ipaddr: str = "9.9.9.9"):
-    r = requests.get(f"https://extreme-ip-lookup.com/json/{ipaddr}?key={code}")
-    geo = r.json()
-    
+async def dox(ctx, *, ipaddr: str = "9.9.9.9"):
     try:
+        r = requests.get(f"https://extreme-ip-lookup.com/json/{ipaddr}?key={IPcode}")
+        geo = r.json()
+    
         embed_dox = discord.Embed()
 
         embed_dox.add_field(name="IP", value=geo["query"], inline=True)
@@ -85,6 +88,41 @@ async def ip(ctx, *, ipaddr: str = "9.9.9.9"):
         await ctx.send(content=None, embed=embed_QueryError)
         print("Unit1: Query Error")
 
+#Weather command
+@client.command()
+async def weather(ctx, *, city: str):
+    try:
+        r = requests.get(f"http://api.openweathermap.org/data/2.5/weather?appid={Wcode}&q={city}")
+        data = r.json()
+        main = data["main"]
+
+        temp = main['temp']
+        temp_c =int(round(temp - 273.15))
+        temp_f =  round((temp_c * 1.8) + 32)
+        pressure = main['pressure']
+        humidity = main['humidity']
+
+        weather = data["weather"]
+        description = weather[0]['description']
+
+        embed_weather = discord.Embed(title=(f"Weather in {city}"))
+        embed_weather.add_field(name="Description", value=description, inline=False)
+
+        embed_weather.add_field(name="Temperature (C)", value=temp_c, inline=False)
+        embed_weather.add_field(name="Temperature (F)", value=temp_f, inline=False)
+
+        embed_weather.add_field(name="Humidity", value=(f"{humidity} %"), inline=True)
+        embed_weather.add_field(name="Pressure", value=(f"{pressure} hPa"), inline=True)
+
+        embed_weather.timestamp = datetime.datetime.utcnow()
+        embed_weather.set_footer(text="\u200b")
+
+        await ctx.send(content=None, embed=embed_weather)
+    except:
+        embed_LocationError = discord.Embed(title="Location Error", description="Invalid Location. Try searching 'City, Country'.")
+        await ctx.send(content=None, embed=embed_LocationError)
+        print("Unit1: Location Error")
+    
 # Chat Log, Bot Reaction, Wiki Search
 @client.event
 async def on_message(message):
