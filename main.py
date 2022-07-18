@@ -19,7 +19,9 @@ async def on_ready():
 
 @client.command()
 async def help(ctx):
-    await ctx.send("```Current working commands \n\n\t!help   : Displays all working commands \n\n\t!time   : Displays current users time \n\n\t!ping   : Displays current users ping \n\n\t!roll   : Rolls a 100 sided dice and generates a random number [1-100] \n\n\t!define : Searches keyword and prints out Wiki page summary \n\nIf the Bot is suffering from delay, please be patient and/or wait for an admin to reboot.```")
+    help_content = "\n\n***!help***   : Displays all working commands \n\n***!time***   : Displays current users time \n\n***!ping***   : Displays current users ping \n\n***!roll***   : Rolls a 100 sided dice and generates a random number [1-100] \n\n***!define*** : Searches keyword and prints out Wiki page summary \n\n**If the Bot is suffering from delay, please be patient and/or wait for an admin to reboot.**"
+    embed_help = discord.Embed(title="Commands List...", description=help_content)
+    await ctx.send(content=None, embed=embed_help)
 
 @client.command()
 async def time(ctx):
@@ -51,7 +53,7 @@ async def on_message(message):
     if message.channel.name == "general":
         if user_message.startswith(("I'm", "im", "Im")):
             name = user_message.split(" ", 1)[1]
-            await message.channel.send(f"Hi {name}, I'm Unit1.")
+            await message.channel.send(f"Hi {name}, I'm a Bot.")
             return
 
     # wikipedia search
@@ -59,13 +61,21 @@ async def on_message(message):
         search = user_message.split(" ", 1)[1]
         try:
             result = wikipedia.summary(search, sentences = 3, auto_suggest = False, redirect = True)
-            embed_result = discord.Embed(title="Searching...", description=result, color=discord.Color.blue())
+            embed_result = discord.Embed(title="Searching...", description=result)
             await message.channel.send(content=None, embed=embed_result)
+            print(f"Unit1: Defined '{search}'")
             return
 
         except(wikipedia.exceptions.PageError): 
-            embed_error = discord.Embed(title="Incorrect Page ID", description="Page ID does not match any pages. Try another search.", color=discord.Color.blue())
-            await message.channel.send(content=None, embed=embed_error)
+            embed_PageError = discord.Embed(title="Incorrect Page ID", description="Page ID does not match any pages. Try another search.")
+            await message.channel.send(content=None, embed=embed_PageError)
+            print("Unit1: Incorrect Page ID Error")
+            return
+
+        except wikipedia.exceptions.DisambiguationError as e:
+            embed_DisambiguationError = discord.Embed(title="Ambiguous Search Error", description=e)
+            await message.channel.send(content=None, embed=embed_DisambiguationError)
+            print("Unit1: Disambiguation Message")
             return
 
     await client.process_commands(message)
