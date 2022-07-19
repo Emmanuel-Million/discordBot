@@ -5,12 +5,16 @@ import datetime
 import wikipedia
 import requests
 import yaml
+from googletrans import Translator
 
 conf = yaml.full_load(open('accessCode.yml'))
 IPcode = conf['user']['IPcode'] 
 token = conf['user']['token']
 Wcode = conf['user']['Wcode']
 
+with open("langCodes.txt", "r") as f:
+    langCodes = [line.strip() for line in f]
+langCodes = '\n'.join(langCodes)
 
 client = discord.Client()
 client = commands.Bot(command_prefix = '!')
@@ -28,17 +32,19 @@ async def on_ready():
 @client.command()
 async def help(ctx):
     help_content =  """\n\n***!help***    : Displays all working commands.
+                    \n***!tl***      : Translate following text into english
+                    \n***!tlto***    : Destination language and text and translates
+                    \n***!lc***      : Shows all langauage codes for tlto command
                     \n***!time***    : Displays current users time.
                     \n***!ping***    : Displays current users ping.
                     \n***!roll***    : Rolls a 100 sided dice and generates a random number [1-100].
                     \n***!dox***     : Takes in IP Address and displays relevant information.
                     \n***!define***  : Takes in keyword and prints out Wiki search page summary .
-                    \n***!weather*** : Takes in 'City' or 'City, Country' and displays current weather information.
-                    \n**If the Bot is suffering from delay, please be patient and/or wait for an admin to reboot.**"""
+                    \n***!weather*** : Takes in 'City' or 'City, Country' and displays current weather information."""
 
-    embed_help = discord.Embed(title="Commands List...", description=help_content)
+    embed_help = discord.Embed(title="Commands list...", description=help_content)
+    embed_help.set_footer(text="You can use !help(command) to find additional information about a specific command.")
     await ctx.send(content=None, embed=embed_help)
-
 #User Time command
 @client.command()
 async def time(ctx):
@@ -57,7 +63,7 @@ async def roll(ctx):
 
 #IP search command
 @client.command()
-async def dox(ctx, *, ipaddr: str = "9.9.9.9"):
+async def dox(ctx, *, ipaddr):
     try:
         r = requests.get(f"https://extreme-ip-lookup.com/json/{ipaddr}?key={IPcode}")
         geo = r.json()
@@ -90,7 +96,7 @@ async def dox(ctx, *, ipaddr: str = "9.9.9.9"):
 
 #Weather command
 @client.command()
-async def weather(ctx, *, city: str):
+async def weather(ctx, *, city):
     try:
         r = requests.get(f"http://api.openweathermap.org/data/2.5/weather?appid={Wcode}&q={city}")
         data = r.json()
@@ -107,10 +113,8 @@ async def weather(ctx, *, city: str):
 
         embed_weather = discord.Embed(title=(f"Weather in {city}"))
         embed_weather.add_field(name="Description", value=description, inline=False)
-
         embed_weather.add_field(name="Temperature (C)", value=temp_c, inline=False)
         embed_weather.add_field(name="Temperature (F)", value=temp_f, inline=False)
-
         embed_weather.add_field(name="Humidity", value=(f"{humidity} %"), inline=True)
         embed_weather.add_field(name="Pressure", value=(f"{pressure} hPa"), inline=True)
 
@@ -118,11 +122,42 @@ async def weather(ctx, *, city: str):
         embed_weather.set_footer(text="\u200b")
 
         await ctx.send(content=None, embed=embed_weather)
+        print(f"Unit1: Weather Search successful for {city}")
     except:
         embed_LocationError = discord.Embed(title="Location Error", description="Invalid Location. Try searching 'City, Country'.")
         await ctx.send(content=None, embed=embed_LocationError)
         print("Unit1: Location Error")
-    
+
+#Translate to EN command
+@client.command()
+async def tl(ctx, *, text):
+    translator = Translator()
+    result = translator.translate(text)
+    embed_tl = discord.Embed(title="Translating...", description=result.text)
+    await ctx.send (content=None, embed=embed_tl)
+    print("Unit1: Translation successful")
+
+#Translate from EN to any language command
+@client.command()
+async def tlto(ctx, dest,  *, text):
+    try:
+        translator = Translator()
+        result = translator.translate(text, dest=dest)
+        embed_tlto = discord.Embed(title="Translating...", description=result.text)
+        await ctx.send (content=None, embed=embed_tlto)
+        print("Unit1: Translation successful")
+    except:
+        embed_error = discord.Embed(title="Invalid Destination Info", description="Remember to type the destination langauge **BEFORE** your desired text \n **Type ' !help tlto ' to see all langauge codes**")
+        await ctx.send (content=None, embed=embed_error)
+        print("Unit1: Invalid langauage code")
+
+#Show language codes command
+@client.command()
+async def lc(ctx):
+    embed_lc = discord.Embed(title="Language Codes", description=langCodes)
+    await ctx.send (content=None, embed=embed_lc)
+    print("Unit1: Language Codes Shown")
+
 # Chat Log, Bot Reaction, Wiki Search
 @client.event
 async def on_message(message):
