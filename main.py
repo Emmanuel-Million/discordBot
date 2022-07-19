@@ -17,7 +17,7 @@ with open("langCodes.txt", "r") as f:
 langCodes = '\n'.join(langCodes)
 
 client = discord.Client()
-client = commands.Bot(command_prefix = '!')
+client = commands.Bot(command_prefix = '!', case_insensitive=True)
 
 client.remove_command('help')
 
@@ -31,20 +31,21 @@ async def on_ready():
 #Help command
 @client.command()
 async def help(ctx):
-    help_content =  """\n\n***!help***    : Displays all working commands.
-                    \n***!tl***      : Translate following text into english
-                    \n***!tlto***    : Destination language and text and translates
-                    \n***!lc***      : Shows all langauage codes for tlto command
-                    \n***!time***    : Displays current users time.
-                    \n***!ping***    : Displays current users ping.
-                    \n***!roll***    : Rolls a 100 sided dice and generates a random number [1-100].
-                    \n***!dox***     : Takes in IP Address and displays relevant information.
-                    \n***!define***  : Takes in keyword and prints out Wiki search page summary .
-                    \n***!weather*** : Takes in 'City' or 'City, Country' and displays current weather information."""
+    help_content =  """\n\n**!HELP** : Displays all working commands.
+                    \n**!TL** : Translate following text into english
+                    \n**!TLTO** : Destination language and text and translates
+                    \n**!LC** : Shows all langauage codes for tlto command
+                    \n**!TIME** : Displays current users time.
+                    \n**!PING** : Displays current users ping.
+                    \n**!ROLL** : Rolls a 100 sided dice and generates a random number [1-100].
+                    \n**!IP** : Takes in IP Address and displays relevant information.
+                    \n**!DEFINE** : Takes in keyword and prints out Wiki search page summary .
+                    \n**!WEATHER** : Takes in 'City' or 'City, Country' and displays current weather information."""
 
     embed_help = discord.Embed(title="Commands list...", description=help_content)
-    embed_help.set_footer(text="You can use !help(command) to find additional information about a specific command.")
+    embed_help.set_footer(text="Commands are not case sensitive.")
     await ctx.send(content=None, embed=embed_help)
+    print("Unit1: Displayed")
 #User Time command
 @client.command()
 async def time(ctx):
@@ -63,7 +64,7 @@ async def roll(ctx):
 
 #IP search command
 @client.command()
-async def dox(ctx, *, ipaddr):
+async def ip(ctx, *, ipaddr):
     try:
         r = requests.get(f"https://extreme-ip-lookup.com/json/{ipaddr}?key={IPcode}")
         geo = r.json()
