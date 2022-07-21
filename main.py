@@ -31,36 +31,39 @@ async def on_ready():
 #Help command
 @client.command()
 async def help(ctx):
-    help_content =  """\n\n**!HELP** : Displays all working commands.
-                    \n**!TL** : Translate following text into english
-                    \n**!TLTO** : Destination language and text and translates
-                    \n**!LC** : Shows all langauage codes for tlto command
-                    \n**!TIME** : Displays current users time.
-                    \n**!PING** : Displays current users ping.
-                    \n**!ROLL** : Rolls a 100 sided dice and generates a random number [1-100].
-                    \n**!IP** : Takes in IP Address and displays relevant information.
-                    \n**!DEFINE** : Takes in keyword and prints out Wiki search page summary .
-                    \n**!WEATHER** : Takes in 'City' or 'City, Country' and displays current weather information."""
+    help_content =  """__**General commands**__
+                    **help** - Displays all working commands.
+                    **time** - Displays current users time.
+                    **ping** - Displays current users ping.
+                    **roll** - Rolls a 100 sided dice and generates a random number [1-100].
+                    \n__**Translation commands**__
+                    **tl** - Translate following text into english
+                    **tlto** - Destination language and text and translates
+                    **lc** - Shows all langauage codes for tlto command
+                    \n__**Unique commands**__
+                    **ip** - Takes in IP Address and displays relevant information.
+                    **define** - Takes in keyword and prints out Wiki search page summary .
+                    **weather** - Takes in 'City' or 'City, Country' and displays current weather information."""
 
-    embed_help = discord.Embed(title="Commands list...", description=help_content)
-    embed_help.set_footer(text="Commands are not case sensitive.")
+    embed_help = discord.Embed(title="__**Commands**__", description=help_content)
+    embed_help.set_footer(text="Prefix for all commands is '!' All commands are not case sensitive.")
     await ctx.send(content=None, embed=embed_help)
     print("Unit1: Displayed")
 #User Time command
 @client.command()
 async def time(ctx):
     x = datetime.datetime.now()
-    await ctx.send(x.strftime("```%A %B %d,  %Y  %I:%M %p```"))
+    await ctx.send(x.strftime("%A %B %d,  %Y  %I:%M %p"))
 
 #User Ping command
 @client.command()
 async def ping(ctx):
-    await ctx.send(f"```ping = {round(client.latency * 100)} ms```")
+    await ctx.send(f"ping = {round(client.latency * 100)} ms")
 
 #Dice roll command
 @client.command()
 async def roll(ctx):
-    await ctx.send(f"```You rolled a {random.randrange(101)}```")
+    await ctx.send(f"You rolled a {random.randrange(101)}")
 
 #IP search command
 @client.command()
@@ -112,7 +115,7 @@ async def weather(ctx, *, city):
         weather = data["weather"]
         description = weather[0]['description']
 
-        embed_weather = discord.Embed(title=(f"Weather in {city}"))
+        embed_weather = discord.Embed(title=(f"__**Weather in {city}**__"))
         embed_weather.add_field(name="Description", value=description, inline=False)
         embed_weather.add_field(name="Temperature (C)", value=temp_c, inline=False)
         embed_weather.add_field(name="Temperature (F)", value=temp_f, inline=False)
@@ -134,7 +137,7 @@ async def weather(ctx, *, city):
 async def tl(ctx, *, text):
     translator = Translator()
     result = translator.translate(text)
-    embed_tl = discord.Embed(title="Translating...", description=result.text)
+    embed_tl = discord.Embed(title="__**Translating to en**__", description=result.text)
     await ctx.send (content=None, embed=embed_tl)
     print("Unit1: Translation successful")
 
@@ -144,18 +147,18 @@ async def tlto(ctx, dest,  *, text):
     try:
         translator = Translator()
         result = translator.translate(text, dest=dest)
-        embed_tlto = discord.Embed(title="Translating...", description=result.text)
+        embed_tlto = discord.Embed(title=(f"__**Translating to {dest}**__"), description=result.text)
         await ctx.send (content=None, embed=embed_tlto)
         print("Unit1: Translation successful")
     except:
-        embed_error = discord.Embed(title="Invalid Destination Info", description="Remember to type the destination langauge **BEFORE** your desired text \n **Type ' !help tlto ' to see all langauge codes**")
+        embed_error = discord.Embed(title="__**Invalid Destination Info**__", description="Remember to type the destination langauge **BEFORE** your desired text \nType ' !lc ' to see all langauge codes")
         await ctx.send (content=None, embed=embed_error)
         print("Unit1: Invalid langauage code")
 
 #Show language codes command
 @client.command()
 async def lc(ctx):
-    embed_lc = discord.Embed(title="Language Codes", description=langCodes)
+    embed_lc = discord.Embed(title="__**Language codes**__", description=langCodes)
     await ctx.send (content=None, embed=embed_lc)
     print("Unit1: Language Codes Shown")
 
@@ -182,19 +185,19 @@ async def on_message(message):
         search = user_message.split(" ", 1)[1]
         try:
             result = wikipedia.summary(search, sentences = 3, auto_suggest = False, redirect = True)
-            embed_result = discord.Embed(title="Searching...", description=result)
+            embed_result = discord.Embed(title=(f"__**Searching {search}...**__"), description=result)
             await message.channel.send(content=None, embed=embed_result)
             print(f"Unit1: Defined '{search}'")
             return
 
         except(wikipedia.exceptions.PageError): 
-            embed_PageError = discord.Embed(title="Incorrect Page ID", description="Page ID does not match any pages. Try another search.")
+            embed_PageError = discord.Embed(title="__**Incorrect Page ID**__", description="Page ID does not match any pages. Try another search.")
             await message.channel.send(content=None, embed=embed_PageError)
             print("Unit1: Incorrect Page ID Error")
             return
 
         except wikipedia.exceptions.DisambiguationError as e:
-            embed_DisambiguationError = discord.Embed(title="Ambiguous Search Error.", description=e)
+            embed_DisambiguationError = discord.Embed(title="__**Ambiguous Search Error**__.", description=e)
             await message.channel.send(content=None, embed=embed_DisambiguationError)
             print("Unit1: Disambiguation Message")
             return
