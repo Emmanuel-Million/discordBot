@@ -6,11 +6,24 @@ import wikipedia
 import requests
 import yaml
 from googletrans import Translator
+import praw
+
 
 conf = yaml.full_load(open('accessCode.yml'))
 IPcode = conf['user']['IPcode'] 
 token = conf['user']['token']
 Wcode = conf['user']['Wcode']
+clientId = conf['user']['clientId']
+clientSecret = conf['user']['clientSecret']
+username = conf['user']['username']
+password = conf['user']['password']
+
+reddit = praw.Reddit(check_for_async=False,
+                    client_id=clientId,
+                    client_secret=clientSecret,
+                    username=username,
+                    password=password,
+                    user_agent="DiscordPythonBot")
 
 with open("langCodes.txt", "r") as f:
     langCodes = [line.strip() for line in f]
@@ -18,7 +31,6 @@ langCodes = '\n'.join(langCodes)
 
 client = discord.Client()
 client = commands.Bot(command_prefix = '!', case_insensitive=True)
-
 client.remove_command('help')
 
 #Bot ready
@@ -36,14 +48,18 @@ async def help(ctx):
                     **time** - Displays current users time.
                     **ping** - Displays current users ping.
                     **roll** - Rolls a 100 sided dice and generates a random number [1-100].
+                    **pfp** - Gets @'ed users discord avatar and displays it.
                     \n__**Translation commands**__
                     **tl** - Translate following text into english
                     **tlto** - Destination language and text and translates
                     **lc** - Shows all langauage codes for tlto command
+                    \n__**Anime commands**__
+                    **animeme** - Displays reddit posts from r/Animemes. 
+                    **animewallpaper** - Displays reddit posts from r/Animewallpaper.
                     \n__**Unique commands**__
                     **ip** - Takes in IP Address and displays relevant information.
                     **define** - Takes in keyword and prints out Wiki search page summary .
-                    **weather** - Takes in 'City' or 'City, Country' and displays current weather information."""
+                    **weather** - Takes in 'City' or 'City, State/Country' and displays current weather information."""
 
     embed_help = discord.Embed(title="__**Commands**__", description=help_content)
     embed_help.set_footer(text="Prefix for all commands is '!' All commands are not case sensitive.")
@@ -115,7 +131,7 @@ async def weather(ctx, *, city):
         weather = data["weather"]
         description = weather[0]['description']
 
-        embed_weather = discord.Embed(title=(f"__**Weather in {city}**__"))
+        embed_weather = discord.Embed(title=(f"Weather in {city}"))
         embed_weather.add_field(name="Description", value=description, inline=False)
         embed_weather.add_field(name="Temperature (C)", value=temp_c, inline=False)
         embed_weather.add_field(name="Temperature (F)", value=temp_f, inline=False)
@@ -137,7 +153,7 @@ async def weather(ctx, *, city):
 async def tl(ctx, *, text):
     translator = Translator()
     result = translator.translate(text)
-    embed_tl = discord.Embed(title="__**Translating to en**__", description=result.text)
+    embed_tl = discord.Embed(title="Translating to en", description=result.text)
     await ctx.send (content=None, embed=embed_tl)
     print("Unit1: Translation successful")
 
@@ -147,20 +163,72 @@ async def tlto(ctx, dest,  *, text):
     try:
         translator = Translator()
         result = translator.translate(text, dest=dest)
-        embed_tlto = discord.Embed(title=(f"__**Translating to {dest}**__"), description=result.text)
+        embed_tlto = discord.Embed(title=(f"Translating to {dest}"), description=result.text)
         await ctx.send (content=None, embed=embed_tlto)
         print("Unit1: Translation successful")
     except:
-        embed_error = discord.Embed(title="__**Invalid Destination Info**__", description="Remember to type the destination langauge **BEFORE** your desired text \nType ' !lc ' to see all langauge codes")
+        embed_error = discord.Embed(title="Invalid Destination Info", description="Remember to type the destination langauge **BEFORE** your desired text \nType ' !lc ' to see all langauge codes")
         await ctx.send (content=None, embed=embed_error)
         print("Unit1: Invalid langauage code")
+
+#Animeme
+@client.command()
+async def animeme(ctx):
+    subreddit = reddit.subreddit("Animemes")
+    all_subs = []
+
+    top = subreddit.top(limit = 50)
+
+    for submission in top:
+        all_subs.append(submission)
+
+    random_sub = random.choice(all_subs)
+    name = random_sub.title
+    url = random_sub.url
+    embed_reddit = discord.Embed(title = name)
+    embed_reddit.set_image(url = url)
+
+    await ctx.send(embed=embed_reddit)
+    print("Unit1: Meme sent")
+
+#Animewallpaper
+@client.command()
+async def animewallpaper(ctx):
+    subreddit = reddit.subreddit("Animewallpaper")
+    all_subs = []
+    top = subreddit.top(limit = 50)
+    for submission in top:
+        all_subs.append(submission)
+
+    random_sub = random.choice(all_subs)
+    name = random_sub.title
+    url = random_sub.url
+    embed_reddit = discord.Embed(title = name)
+    embed_reddit.set_image(url = url)
+
+    await ctx.send(embed=embed_reddit)
+    print("Unit1: Wallpaper sent")
 
 #Show language codes command
 @client.command()
 async def lc(ctx):
-    embed_lc = discord.Embed(title="__**Language codes**__", description=langCodes)
+    embed_lc = discord.Embed(title="Language codes", description=langCodes)
     await ctx.send (content=None, embed=embed_lc)
     print("Unit1: Language Codes Shown")
+
+#Profile picture command
+@client.command()
+async def pfp(ctx, *, member: discord.Member):
+    try:
+        pfp = member.avatar_url
+        embed_pfp = discord.Embed(title=member)
+        embed_pfp.set_image(url = pfp)
+        await ctx.send(embed=embed_pfp)
+        print("Unit1: pfp sent")
+    except:
+        embed_userError = discord.Embed(title="Invalid user", description="That user does not exist.")
+        await ctx.send(embed=embed_userError)
+        print("Unit1: User does not exist")
 
 # Chat Log, Bot Reaction, Wiki Search
 @client.event
@@ -174,33 +242,33 @@ async def on_message(message):
     #Keep bot from responding to self
     if message.author == client.user:
         return
-
+    
+    #Bot response event
     if message.channel.name == "general":
         if user_message.startswith(("I'm", "im", "Im")):
             name = user_message.split(" ", 1)[1]
             await message.channel.send(f"Hi {name}, I'm a Bot.")
             return
 
+    #Wiki search command
     if user_message.startswith("!define"):
         search = user_message.split(" ", 1)[1]
         try:
             result = wikipedia.summary(search, sentences = 3, auto_suggest = False, redirect = True)
-            embed_result = discord.Embed(title=(f"__**Searching {search}...**__"), description=result)
+            embed_result = discord.Embed(title=(f"Searching for {search}..."), description=result)
             await message.channel.send(content=None, embed=embed_result)
             print(f"Unit1: Defined '{search}'")
             return
 
         except(wikipedia.exceptions.PageError): 
-            embed_PageError = discord.Embed(title="__**Incorrect Page ID**__", description="Page ID does not match any pages. Try another search.")
+            embed_PageError = discord.Embed(title="Incorrect Page ID*", description="Page ID does not match any pages. Try another search.")
             await message.channel.send(content=None, embed=embed_PageError)
             print("Unit1: Incorrect Page ID Error")
-            return
 
         except wikipedia.exceptions.DisambiguationError as e:
-            embed_DisambiguationError = discord.Embed(title="__**Ambiguous Search Error**__.", description=e)
+            embed_DisambiguationError = discord.Embed(title="Ambiguous Search Error.", description=e)
             await message.channel.send(content=None, embed=embed_DisambiguationError)
             print("Unit1: Disambiguation Message")
-            return
 
     await client.process_commands(message)
 
