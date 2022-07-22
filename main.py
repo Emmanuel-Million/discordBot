@@ -7,6 +7,8 @@ import requests
 import yaml
 from googletrans import Translator
 import praw
+import pytz
+from geopy import geocoders
 
 
 conf = yaml.full_load(open('accessCode.yml'))
@@ -65,11 +67,19 @@ async def help(ctx):
     embed_help.set_footer(text="Prefix for all commands is '!' All commands are not case sensitive.")
     await ctx.send(content=None, embed=embed_help)
     print("Unit1: Displayed")
+
 #User Time command
 @client.command()
-async def time(ctx):
-    x = datetime.datetime.now()
-    await ctx.send(x.strftime("%A %B %d,  %Y  %I:%M %p"))
+async def time(ctx, *, city=None):
+    
+
+    if city is None:
+        time = datetime.datetime.now()
+        await ctx.send(time.strftime("%A %B %d,  %Y  %I:%M %p"))
+    else:
+        gn = geocoders.GeoNames()
+        coord = gn.geocode(city)
+        print(coord)
 
 #User Ping command
 @client.command()
@@ -103,9 +113,6 @@ async def ip(ctx, *, ipaddr):
         embed_dox.add_field(name="Region", value=geo["region"], inline=True)
         embed_dox.add_field(name="Status", value=geo["status"], inline=True)
 
-        embed_dox.timestamp = datetime.datetime.utcnow()
-        embed_dox.set_footer(text="\u200b")
-
         await ctx.send(content=None, embed=embed_dox)
         print(f"Unit1: Dox Successful for IP: {ipaddr}")
     
@@ -113,6 +120,14 @@ async def ip(ctx, *, ipaddr):
         embed_QueryError = discord.Embed(title="Query Error", description="Invalid IP. Try another search.")
         await ctx.send(content=None, embed=embed_QueryError)
         print("Unit1: Query Error")
+
+#IP search command Error handling
+@ip.error
+async def ip_error(ctx, error):
+    embed_ipError = discord.Embed(title="Mising Ip", description="The IP after the command is missing.")
+    if isinstance(error, commands.errors.MissingRequiredArgument):
+        await ctx.send(embed=embed_ipError)
+        print("Unit1: Invalid ip")
 
 #Weather command
 @client.command()
@@ -138,9 +153,6 @@ async def weather(ctx, *, city):
         embed_weather.add_field(name="Humidity", value=(f"{humidity} %"), inline=True)
         embed_weather.add_field(name="Pressure", value=(f"{pressure} hPa"), inline=True)
 
-        embed_weather.timestamp = datetime.datetime.utcnow()
-        embed_weather.set_footer(text="\u200b")
-
         await ctx.send(content=None, embed=embed_weather)
         print(f"Unit1: Weather Search successful for {city}")
     except:
@@ -148,12 +160,20 @@ async def weather(ctx, *, city):
         await ctx.send(content=None, embed=embed_LocationError)
         print("Unit1: Location Error")
 
+#Weather command Error handling
+@weather.error
+async def weather_error(ctx, error):
+    embed_weatherError = discord.Embed(title="Mising location", description="The location (City / City,Country) for this command is missing.")
+    if isinstance(error, commands.errors.MissingRequiredArgument):
+        await ctx.send(embed=embed_weatherError)
+        print("Unit1: Invalid text")
+
 #Translate to EN command
 @client.command()
 async def tl(ctx, *, text):
     translator = Translator()
     result = translator.translate(text)
-    embed_tl = discord.Embed(title="Translating to en", description=result.text)
+    embed_tl = discord.Embed(description=result.text)
     await ctx.send (content=None, embed=embed_tl)
     print("Unit1: Translation successful")
 
@@ -163,13 +183,21 @@ async def tlto(ctx, dest,  *, text):
     try:
         translator = Translator()
         result = translator.translate(text, dest=dest)
-        embed_tlto = discord.Embed(title=(f"Translating to {dest}"), description=result.text)
+        embed_tlto = discord.Embed(description=result.text)
         await ctx.send (content=None, embed=embed_tlto)
         print("Unit1: Translation successful")
     except:
         embed_error = discord.Embed(title="Invalid Destination Info", description="Remember to type the destination langauge **BEFORE** your desired text \nType ' !lc ' to see all langauge codes")
         await ctx.send (content=None, embed=embed_error)
         print("Unit1: Invalid langauage code")
+
+#Translate from EN to any language command Error handling 
+@tlto.error
+async def tlto_error(ctx, error):
+    embed_tltoError = discord.Embed(title="Mising text", description="The text to be translated is missing.")
+    if isinstance(error, commands.errors.MissingRequiredArgument):
+        await ctx.send(embed=embed_tltoError)
+        print("Unit1: Invalid text")
 
 #Animeme
 @client.command()
@@ -218,17 +246,27 @@ async def lc(ctx):
 
 #Profile picture command
 @client.command()
-async def pfp(ctx, *, member: discord.Member):
-    try:
+async def pfp(ctx, member: discord.Member = None):
+    if member is None:
+        embed_emptyUserError = discord.Embed(title="Empty user", description="Make sure to @ a user after the command.")
+        await ctx.send(embed=embed_emptyUserError)
+        print("Unit1: Empty user")
+
+    else:
         pfp = member.avatar_url
         embed_pfp = discord.Embed(title=member)
         embed_pfp.set_image(url = pfp)
         await ctx.send(embed=embed_pfp)
         print("Unit1: pfp sent")
-    except:
-        embed_userError = discord.Embed(title="Invalid user", description="That user does not exist.")
-        await ctx.send(embed=embed_userError)
-        print("Unit1: User does not exist")
+
+#Profile picture command error handling
+@pfp.error
+async def pfp_error(ctx, error):
+    embed_pfpError = discord.Embed(title="Invalid user", description="That user does not exist.")
+
+    if isinstance(error, commands.errors.MemberNotFound):
+        await ctx.send(embed=embed_pfpError)
+        print("Unit1: Invalid user")
 
 # Chat Log, Bot Reaction, Wiki Search
 @client.event
