@@ -8,7 +8,8 @@ import yaml
 from googletrans import Translator
 import praw
 import pytz
-from geopy import geocoders
+from timezonefinder import TimezoneFinder
+from geopy.geocoders import Nominatim
 
 
 conf = yaml.full_load(open('accessCode.yml'))
@@ -47,9 +48,9 @@ async def on_ready():
 async def help(ctx):
     help_content =  """__**General commands**__
                     **help** - Displays all working commands.
-                    **time** - Displays current users time.
                     **ping** - Displays current users ping.
                     **roll** - Rolls a 100 sided dice and generates a random number [1-100].
+                    **time** - Displays current users time, or input a 'City'/'City, Country' to get its current time.
                     **pfp** - Gets @'ed users discord avatar and displays it.
                     \n__**Translation commands**__
                     **tl** - Translate following text into english
@@ -71,15 +72,26 @@ async def help(ctx):
 #User Time command
 @client.command()
 async def time(ctx, *, city=None):
-    
+    geolocator = Nominatim(user_agent="MyApp")
+    tf = TimezoneFinder()
 
     if city is None:
         time = datetime.datetime.now()
         await ctx.send(time.strftime("%A %B %d,  %Y  %I:%M %p"))
+        print("Unit1: Time sent")
     else:
-        gn = geocoders.GeoNames()
-        coord = gn.geocode(city)
-        print(coord)
+        try:
+            location = geolocator.geocode(city)
+            print(location.latitude, location.longitude)
+            timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude)
+            timezone_time= pytz.timezone(timezone)
+            time = datetime.datetime.now(timezone_time)
+            await ctx.send(time.strftime("%A %B %d,  %Y  %I:%M %p"))
+            print("Unit1: Time sent")
+        except:
+            embed_locationError = discord.Embed(title="Location Error", description="Invalid Location. Try searching 'City, Country'.")
+            await ctx.send(embed=embed_locationError)
+            print("Unit1: Invalid location")
 
 #User Ping command
 @client.command()
@@ -98,22 +110,22 @@ async def ip(ctx, *, ipaddr):
         r = requests.get(f"https://extreme-ip-lookup.com/json/{ipaddr}?key={IPcode}")
         geo = r.json()
     
-        embed_dox = discord.Embed()
+        embed_ip = discord.Embed()
 
-        embed_dox.add_field(name="IP", value=geo["query"], inline=True)
-        embed_dox.add_field(name="IP Type", value=geo["ipType"], inline=True)
-        embed_dox.add_field(name="Country", value=geo["country"], inline=True)
-        embed_dox.add_field(name="City", value=geo["city"], inline=True)
-        embed_dox.add_field(name="Continent", value=geo["continent"], inline=True)
-        embed_dox.add_field(name="IP Name", value=geo["ipName"], inline=True)
-        embed_dox.add_field(name="ISP", value=geo["isp"], inline=True)
-        embed_dox.add_field(name="Latitude", value=geo["lat"], inline=True)
-        embed_dox.add_field(name="Longitude", value=geo["lon"], inline=True)
-        embed_dox.add_field(name="Org", value=geo["org"], inline=True)
-        embed_dox.add_field(name="Region", value=geo["region"], inline=True)
-        embed_dox.add_field(name="Status", value=geo["status"], inline=True)
+        embed_ip.add_field(name="IP", value=geo["query"], inline=True)
+        embed_ip.add_field(name="IP Type", value=geo["ipType"], inline=True)
+        embed_ip.add_field(name="Country", value=geo["country"], inline=True)
+        embed_ip.add_field(name="City", value=geo["city"], inline=True)
+        embed_ip.add_field(name="Continent", value=geo["continent"], inline=True)
+        embed_ip.add_field(name="IP Name", value=geo["ipName"], inline=True)
+        embed_ip.add_field(name="ISP", value=geo["isp"], inline=True)
+        embed_ip.add_field(name="Latitude", value=geo["lat"], inline=True)
+        embed_ip.add_field(name="Longitude", value=geo["lon"], inline=True)
+        embed_ip.add_field(name="Org", value=geo["org"], inline=True)
+        embed_ip.add_field(name="Region", value=geo["region"], inline=True)
+        embed_ip.add_field(name="Status", value=geo["status"], inline=True)
 
-        await ctx.send(content=None, embed=embed_dox)
+        await ctx.send(content=None, embed=embed_ip)
         print(f"Unit1: Dox Successful for IP: {ipaddr}")
     
     except:
@@ -299,7 +311,7 @@ async def on_message(message):
             return
 
         except(wikipedia.exceptions.PageError): 
-            embed_PageError = discord.Embed(title="Incorrect Page ID*", description="Page ID does not match any pages. Try another search.")
+            embed_PageError = discord.Embed(title="Incorrect Page ID", description="Page ID does not match any pages. Try another search.")
             await message.channel.send(content=None, embed=embed_PageError)
             print("Unit1: Incorrect Page ID Error")
 
